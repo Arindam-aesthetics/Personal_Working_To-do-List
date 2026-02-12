@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TASKS — Get It Done</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0d0d;
+    --surface: #161616;
+    --surface2: #1f1f1f;
+    --border: #2a2a2a;
+    --accent: #e8ff47;
+    --accent2: #ff6b35;
+    --accent3: #7df9ff;
+    --text: #f0f0f0;
+    --text-muted: #666;
+    --done-color: #333;
+    --radius: 14px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px 80px;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 600px 400px at 10% 20%, rgba(232, 255, 71, 0.04) 0%, transparent 70%),
+      radial-gradient(ellipse 500px 300px at 90% 80%, rgba(125, 249, 255, 0.04) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+    animation: bgPulse 8s ease-in-out infinite alternate;
+  }
+
+  @keyframes bgPulse {
+    from { opacity: 0.6; }
+    to { opacity: 1; }
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 620px;
+  }
+
+  header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 36px;
+    animation: slideDown 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: clamp(36px, 8vw, 56px);
+    letter-spacing: -2px;
+    line-height: 1;
+  }
+
+  .logo span {
+    display: inline-block;
+    background: var(--accent);
+    color: var(--bg);
+    padding: 2px 10px 4px;
+    margin-left: 6px;
+    border-radius: 6px;
+    font-size: 0.7em;
+    vertical-align: middle;
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
+
+  .date-display {
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    text-align: right;
+    line-height: 1.6;
+  }
+
+  .stats {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 28px;
+    animation: slideDown 0.6s 0.1s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .stat-pill {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 8px 18px;
+    font-size: 12px;
+    color: var(--text-muted);
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .stat-pill strong {
+    color: var(--text);
+    font-size: 15px;
+    font-weight: 500;
+    transition: all 0.3s;
+  }
+
+  .stat-pill.highlight strong { color: var(--accent); }
+  .stat-pill.highlight { border-color: rgba(232,255,71,0.2); }
+
+  .progress-wrap {
+    height: 3px;
+    background: var(--border);
+    border-radius: 10px;
+    margin-bottom: 28px;
+    overflow: hidden;
+    animation: slideDown 0.6s 0.15s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent3));
+    border-radius: 10px;
+    transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    width: 0%;
+  }
+
+  .progress-bar::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--accent3);
+    box-shadow: 0 0 12px var(--accent3);
+    transition: opacity 0.3s;
+  }
+
+  .filters {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 20px;
+    animation: slideDown 0.6s 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .filter-btn {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 7px 18px;
+    color: var(--text-muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.05em;
+  }
+
+  .filter-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .filter-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--bg);
+    font-weight: 500;
+  }
+
+  .input-wrap {
+    position: relative;
+    margin-bottom: 24px;
+    animation: slideDown 0.6s 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .todo-input {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 110px 18px 24px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 15px;
+    outline: none;
+    transition: all 0.25s;
+  }
+
+  .todo-input:focus {
+    border-color: var(--accent);
+    background: #1a1a0f;
+    box-shadow: 0 0 0 4px rgba(232, 255, 71, 0.08);
+  }
+
+  .todo-input::placeholder { color: var(--text-muted); }
+
+  .add-btn {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--accent);
+    border: none;
+    border-radius: 8px;
+    padding: 8px 20px;
+    color: var(--bg);
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.05em;
+  }
+
+  .add-btn:hover {
+    background: #fff;
+    transform: translateY(-50%) scale(1.04);
+  }
+
+  .add-btn:active { transform: translateY(-50%) scale(0.97); }
+
+  .priority-wrap {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+    animation: slideDown 0.6s 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .priority-label { font-size: 11px; color: var(--text-muted); margin-right: 4px; align-self: center; }
+
+  .priority-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 5px 14px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: var(--text-muted);
+  }
+
+  .priority-btn[data-p="high"] { --pc: #ff6b35; }
+  .priority-btn[data-p="mid"] { --pc: #e8ff47; }
+  .priority-btn[data-p="low"] { --pc: #7df9ff; }
+
+  .priority-btn:hover { border-color: var(--pc); color: var(--pc); }
+  .priority-btn.selected { background: var(--pc); border-color: var(--pc); color: var(--bg); font-weight: 500; }
+
+  .todo-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    animation: slideDown 0.6s 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .todo-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    animation: itemIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+    position: relative;
+    overflow: hidden;
+    cursor: default;
+  }
+
+  @keyframes itemIn {
+    from { opacity: 0; transform: translateX(-20px) scale(0.97); }
+    to { opacity: 1; transform: translateX(0) scale(1); }
+  }
+
+  .todo-item::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--pc, var(--border));
+    border-radius: 14px 0 0 14px;
+    transition: width 0.3s, opacity 0.3s;
+  }
+
+  .todo-item[data-priority="high"] { --pc: #ff6b35; }
+  .todo-item[data-priority="mid"]  { --pc: #e8ff47; }
+  .todo-item[data-priority="low"]  { --pc: #7df9ff; }
+
+  .todo-item:hover {
+    border-color: rgba(255,255,255,0.1);
+    transform: translateX(3px);
+    background: var(--surface2);
+  }
+
+  .todo-item.done {
+    opacity: 0.45;
+  }
+
+  .todo-item.done .todo-text {
+    text-decoration: line-through;
+    color: var(--text-muted);
+  }
+
+  .todo-item.removing {
+    animation: itemOut 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  @keyframes itemOut {
+    to { opacity: 0; transform: translateX(30px) scale(0.95); height: 0; padding: 0; margin: 0; }
+  }
+
+  .check-btn {
+    width: 26px;
+    height: 26px;
+    min-width: 26px;
+    border-radius: 8px;
+    border: 2px solid var(--border);
+    background: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .check-btn:hover {
+    border-color: var(--accent);
+    background: rgba(232,255,71,0.08);
+    transform: scale(1.1);
+  }
+
+  .check-btn.checked {
+    background: var(--accent);
+    border-color: var(--accent);
+    transform: scale(1.05);
+    animation: checkPop 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes checkPop {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.25); }
+    100% { transform: scale(1.05); }
+  }
+
+  .check-icon {
+    opacity: 0;
+    transform: scale(0.5) rotate(-10deg);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    color: var(--bg);
+    font-size: 13px;
+    font-weight: 900;
+  }
+
+  .check-btn.checked .check-icon {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+
+  .todo-content { flex: 1; min-width: 0; }
+
+  .todo-text {
+    font-size: 15px;
+    color: var(--text);
+    transition: all 0.3s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .todo-meta {
+    display: flex;
+    gap: 10px;
+    margin-top: 5px;
+    align-items: center;
+  }
+
+  .todo-time {
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+  }
+
+  .priority-tag {
+    font-size: 9px;
+    padding: 2px 7px;
+    border-radius: 100px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: rgba(255,255,255,0.05);
+    color: var(--pc);
+    border: 1px solid var(--pc);
+    opacity: 0.7;
+  }
+
+  .delete-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-muted);
+    padding: 6px;
+    border-radius: 8px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    font-size: 16px;
+  }
+
+  .todo-item:hover .delete-btn { opacity: 1; }
+
+  .delete-btn:hover {
+    color: #ff4444;
+    background: rgba(255,68,68,0.1);
+    transform: scale(1.15);
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-muted);
+    font-size: 13px;
+    letter-spacing: 0.05em;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .empty-state .empty-icon {
+    font-size: 48px;
+    display: block;
+    margin-bottom: 8px;
+    opacity: 0.3;
+    animation: float 3s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+
+  .empty-state.visible { display: flex; }
+
+  .footer-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--text-muted);
+    animation: slideDown 0.6s 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .clear-btn {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 6px 16px;
+    color: var(--text-muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .clear-btn:hover { border-color: #ff4444; color: #ff4444; }
+
+  @keyframes burst {
+    0% { opacity: 1; transform: scale(1); }
+    100% { opacity: 0; transform: scale(2.5); }
+  }
+
+  .burst {
+    position: absolute;
+    pointer-events: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 2px solid var(--accent);
+    animation: burst 0.5s ease-out forwards;
+  }
+
+  .toast {
+    position: fixed;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 12px 24px;
+    font-size: 13px;
+    color: var(--text);
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 999;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <div class="logo">TASKS<span id="taskCount">0</span></div>
+    <div class="date-display" id="dateDisplay"></div>
+  </header>
+
+  <div class="stats">
+    <div class="stat-pill highlight">
+      <strong id="statTotal">0</strong> total
+    </div>
+    <div class="stat-pill">
+      <strong id="statDone">0</strong> done
+    </div>
+    <div class="stat-pill">
+      <strong id="statLeft">0</strong> left
+    </div>
+  </div>
+
+  <div class="progress-wrap">
+    <div class="progress-bar" id="progressBar"></div>
+  </div>
+
+  <div class="priority-wrap">
+    <span class="priority-label">priority:</span>
+    <button class="priority-btn selected" data-p="mid">mid</button>
+    <button class="priority-btn" data-p="high">! high</button>
+    <button class="priority-btn" data-p="low">low</button>
+  </div>
+
+  <div class="input-wrap">
+    <input type="text" class="todo-input" id="todoInput" placeholder="add a new task..." maxlength="80">
+    <button class="add-btn" id="addBtn">ADD</button>
+  </div>
+
+  <div class="filters">
+    <button class="filter-btn active" data-filter="all">all</button>
+    <button class="filter-btn" data-filter="active">active</button>
+    <button class="filter-btn" data-filter="done">done</button>
+    <button class="filter-btn" data-filter="high">!! high</button>
+  </div>
+
+  <div class="todo-list" id="todoList">
+    <div class="empty-state" id="emptyState">
+      <span class="empty-icon">◎</span>
+      nothing here yet
+    </div>
+  </div>
+
+  <div class="footer-actions">
+    <span id="footerNote">— clean slate —</span>
+    <button class="clear-btn" id="clearDoneBtn">clear done</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  
+  let todos = JSON.parse(localStorage.getItem('todos') || '[]');
+  let currentFilter = 'all';
+  let currentPriority = 'mid';
+
+ 
+  const dateEl = document.getElementById('dateDisplay');
+  const now = new Date();
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  dateEl.innerHTML = `${days[now.getDay()]}<br>${months[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}`;
+
+  
+  document.querySelectorAll('.priority-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.priority-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      currentPriority = btn.dataset.p;
+    });
+  });
+
+  
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentFilter = btn.dataset.filter;
+      renderList();
+    });
+  });
+
+
+  function addTodo() {
+    const input = document.getElementById('todoInput');
+    const text = input.value.trim();
+    if (!text) {
+      input.style.borderColor = '#ff4444';
+      input.style.boxShadow = '0 0 0 4px rgba(255,68,68,0.1)';
+      setTimeout(() => {
+        input.style.borderColor = '';
+        input.style.boxShadow = '';
+      }, 500);
+      return;
+    }
+    const todo = {
+      id: Date.now(),
+      text,
+      done: false,
+      priority: currentPriority,
+      time: new Date().toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})
+    };
+    todos.unshift(todo);
+    save();
+    renderList();
+    input.value = '';
+    input.focus();
+    showToast(`+ task added`);
+  }
+
+  document.getElementById('addBtn').addEventListener('click', addTodo);
+  document.getElementById('todoInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') addTodo();
+  });
+
+  function toggleDone(id) {
+    const todo = todos.find(t => t.id === id);
+    if (!todo) return;
+    todo.done = !todo.done;
+    save();
+    updateStats();
+
+    if (todo.done) {
+      const item = document.querySelector(`[data-id="${id}"]`);
+      if (item) {
+        const burst = document.createElement('div');
+        burst.className = 'burst';
+        burst.style.left = '30px';
+        burst.style.top = '50%';
+        burst.style.transform = 'translateY(-50%)';
+        item.appendChild(burst);
+        setTimeout(() => burst.remove(), 500);
+        showToast('✓ marked complete');
+      }
+    }
+
+    const el = document.querySelector(`[data-id="${id}"]`);
+    if (el) {
+      el.classList.toggle('done', todo.done);
+      el.querySelector('.check-btn').classList.toggle('checked', todo.done);
+    }
+  }
+
+  function deleteTodo(id) {
+    const el = document.querySelector(`[data-id="${id}"]`);
+    if (el) {
+      el.classList.add('removing');
+      setTimeout(() => {
+        todos = todos.filter(t => t.id !== id);
+        save();
+        renderList();
+      }, 350);
+    }
+  }
+
+  document.getElementById('clearDoneBtn').addEventListener('click', () => {
+    const doneCount = todos.filter(t => t.done).length;
+    if (doneCount === 0) { showToast('no done tasks to clear'); return; }
+    todos = todos.filter(t => !t.done);
+    save();
+    renderList();
+    showToast(`✗ cleared ${doneCount} task${doneCount > 1 ? 's' : ''}`);
+  });
+
+  function renderList() {
+    const list = document.getElementById('todoList');
+    const empty = document.getElementById('emptyState');
+
+    let filtered = todos;
+    if (currentFilter === 'active') filtered = todos.filter(t => !t.done);
+    else if (currentFilter === 'done') filtered = todos.filter(t => t.done);
+    else if (currentFilter === 'high') filtered = todos.filter(t => t.priority === 'high');
+
+    Array.from(list.querySelectorAll('.todo-item')).forEach(el => el.remove());
+
+    if (filtered.length === 0) {
+      empty.classList.add('visible');
+    } else {
+      empty.classList.remove('visible');
+      filtered.forEach((todo, i) => {
+        const item = createItem(todo, i);
+        list.appendChild(item);
+      });
+    }
+
+    updateStats();
+  }
+
+  function createItem(todo, index) {
+    const priorityLabels = { high: '! high', mid: 'mid', low: 'low' };
+    const div = document.createElement('div');
+    div.className = `todo-item${todo.done ? ' done' : ''}`;
+    div.dataset.id = todo.id;
+    div.dataset.priority = todo.priority;
+    div.style.animationDelay = `${index * 0.04}s`;
+
+    div.innerHTML = `
+      <button class="check-btn ${todo.done ? 'checked' : ''}" onclick="toggleDone(${todo.id})">
+        <span class="check-icon">✓</span>
+      </button>
+      <div class="todo-content">
+        <div class="todo-text">${escapeHtml(todo.text)}</div>
+        <div class="todo-meta">
+          <span class="todo-time">${todo.time}</span>
+          <span class="priority-tag">${priorityLabels[todo.priority]}</span>
+        </div>
+      </div>
+      <button class="delete-btn" onclick="deleteTodo(${todo.id})">×</button>
+    `;
+    return div;
+  }
+
+  function escapeHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function updateStats() {
+    const total = todos.length;
+    const done = todos.filter(t => t.done).length;
+    const left = total - done;
+    const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+
+    document.getElementById('taskCount').textContent = total;
+    document.getElementById('statTotal').textContent = total;
+    document.getElementById('statDone').textContent = done;
+    document.getElementById('statLeft').textContent = left;
+    document.getElementById('progressBar').style.width = `${pct}%`;
+
+    const footer = document.getElementById('footerNote');
+    if (total === 0) footer.textContent = '— clean slate —';
+    else if (pct === 100) footer.textContent = '✓ all done!';
+    else footer.textContent = `${pct}% complete`;
+  }
+
+  function save() {
+    localStorage.setItem('todos', JSON.stringify(todos));
+  }
+
+  function showToast(msg) {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+  }
+
+  if (todos.length === 0) {
+    todos = [
+     
+    ];
+    save();
+  }
+
+  renderList();
+</script>
+</body>
+</html>
